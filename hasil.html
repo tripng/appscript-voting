@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef1f7;
+      --ink: #0f172a;
+      --muted: #5b6b7c;
+      --rule: #e3e8f0;
+      --accent: #4f46e5;
+      --accent-2: #7c3aed;
+      --accent-soft: #eef2ff;
+      --live: #16a34a;
+      --shadow: 0 24px 60px -28px rgba(15, 23, 42, .28), 0 6px 18px -10px rgba(15, 23, 42, .10);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      padding: clamp(20px, 4vw, 44px) 16px 40px;
+      min-height: 100vh;
+      background:
+        radial-gradient(1100px 520px at 85% -10%, rgba(124, 58, 237, .08), transparent 60%),
+        radial-gradient(900px 480px at 0% 110%, rgba(79, 70, 229, .08), transparent 60%),
+        var(--bg);
+      color: var(--ink);
+      font: 16px/1.55 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: rgba(79, 70, 229, .18); }
+
+    /* ---- Latar animasi (blob bergerak pelan) ---- */
+    .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+    .bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(15, 23, 42, .05) 1px, transparent 1.4px);
+      background-size: 26px 26px;
+    }
+    .blob { position: absolute; border-radius: 50%; filter: blur(85px); }
+    .blob-1 { width: 430px; height: 430px; top: -140px; left: -120px; background: rgba(99, 102, 241, .38); animation: drift1 22s ease-in-out infinite alternate; }
+    .blob-2 { width: 400px; height: 400px; top: 34%; right: -140px; background: rgba(168, 85, 247, .30); animation: drift2 26s ease-in-out infinite alternate; }
+    .blob-3 { width: 360px; height: 360px; bottom: -150px; left: 22%; background: rgba(236, 72, 153, .22); animation: drift3 30s ease-in-out infinite alternate; }
+
+    /* ---- Kartu utama ---- */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 620px;
+      margin: 44px auto 28px;
+      padding: clamp(26px, 5vw, 42px);
+      background: rgba(255, 255, 255, .84);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, .7);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    main > * { animation: rise .55s cubic-bezier(.22, .68, .32, 1) backwards; }
+    main > *:nth-child(2) { animation-delay: .08s; }
+    main > *:nth-child(3) { animation-delay: .16s; }
+    #daftar { animation-delay: .24s; }
+
+    /* ---- Header ---- */
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 14px; border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(79, 70, 229, .18);
+      color: var(--accent);
+      font-size: 11.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+    }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: denyut 1.8s ease-out infinite; }
+    h1 {
+      font-size: clamp(1.9rem, 6vw, 2.7rem);
+      line-height: 1.12; letter-spacing: -.02em; font-weight: 800;
+      margin: 16px 0 12px;
+    }
+    .hl {
+      position: relative;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+      background-size: 200% auto;
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent;
+      animation: shimmer 6s linear infinite;
+    }
+    .hl::after {
+      content: '';
+      position: absolute; left: 1px; right: 1px; bottom: -3px; height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+      background-size: 200% auto; opacity: .3;
+      animation: shimmer 6s linear infinite;
+    }
+    .status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14.5px; margin: 0; min-height: 20px; }
+    .status .dot {
+      width: 9px; height: 9px; flex: none; border-radius: 50%;
+      background: var(--live);
+      animation: denyut 1.8s ease-out infinite;
+    }
+
+    /* ---- Papan peringkat ---- */
+    #daftar { display: flex; flex-direction: column; gap: 12px; margin-top: 26px; }
+    #daftar > .lain { color: var(--muted); margin: 6px 2px; font-size: 14.5px; }
+    .baris {
+      padding: 16px 18px;
+      border: 1.5px solid var(--rule); border-radius: 16px;
+      background: #fff;
+      transition: transform .2s, box-shadow .25s;
+      animation: rise .45s cubic-bezier(.22, .68, .32, 1) backwards;
+      animation-delay: calc(var(--i, 0) * 60ms);
+    }
+    .baris:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -16px rgba(15, 23, 42, .35); }
+    .baris.juara {
+      border: 1.5px solid transparent;
+      background:
+        linear-gradient(rgba(255, 255, 255, .93), rgba(255, 255, 255, .93)) padding-box,
+        linear-gradient(135deg, rgba(79, 70, 229, .65), rgba(124, 58, 237, .65)) border-box;
+      box-shadow: 0 18px 40px -22px rgba(79, 70, 229, .5);
+    }
+    .atas { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .identitas { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .peringkat {
+      width: 30px; height: 30px; flex: none; border-radius: 10px;
+      background: var(--accent-soft); color: var(--accent);
+      font-size: 14px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .juara .peringkat {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      animation: stepHalo 2.4s ease-out infinite;
+    }
+    .nama { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; min-width: 0; overflow-wrap: anywhere; }
+    .juara .nama { font-size: clamp(1.35rem, 5vw, 1.9rem); font-weight: 800; }
+    .foto {
+      position: relative;
+      width: 48px; height: 48px; flex: none;
+      border-radius: 12px; overflow: hidden;
+      background: var(--accent-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: var(--accent);
+    }
+    .juara .foto { width: 64px; height: 64px; font-size: 1.5rem; border-radius: 16px; }
+    .foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s; }
+    .foto.ada-foto img { opacity: 1; }
+    .skor {
+      font-variant-numeric: tabular-nums;
+      font-size: 13.5px; font-weight: 700; color: var(--muted);
+      white-space: nowrap;
+      background: #f4f6fb; border: 1px solid var(--rule);
+      padding: 6px 12px; border-radius: 999px;
+    }
+    .juara .skor { background: var(--accent-soft); border-color: rgba(79, 70, 229, .25); color: var(--accent); font-size: 14px; }
+    .lintasan { height: 10px; border-radius: 999px; background: #edf0f7; overflow: hidden; }
+    .isi {
+      position: relative; overflow: hidden;
+      height: 100%; width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .9s cubic-bezier(.22, .68, .32, 1);
+    }
+    .juara .isi::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(100deg, transparent 25%, rgba(255, 255, 255, .5) 50%, transparent 75%);
+      transform: translateX(-110%);
+      animation: barSheen 2.8s ease-in-out infinite;
+    }
+
+    /* ---- Footer ---- */
+    footer {
+      max-width: 620px; margin: 26px auto 0;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      color: var(--muted); font-size: .9rem;
+      animation: fade .7s .35s backwards;
+    }
+    footer img { height: 26px; width: auto; border-radius: 6px; }
+    .heart { display: inline-block; color: var(--accent-2); margin-left: 2px; animation: beat 1.8s ease-in-out infinite; }
+    a { color: var(--ink); text-underline-offset: 3px; }
+    a:focus-visible { outline: 3px solid rgba(79, 70, 229, .45); outline-offset: 2px; }
+
+    /* ---- Keyframes ---- */
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes drift1 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(60px, 44px, 0) scale(1.15); } }
+    @keyframes drift2 { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(-56px, 28px, 0) scale(.94); } }
+    @keyframes drift3 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(44px, -50px, 0) scale(1.16); } }
+    @keyframes denyut { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .4); } 75%, 100% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); } }
+    @keyframes stepHalo { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, .35); } 70%, 100% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); } }
+    @keyframes barSheen { 0% { transform: translateX(-110%); } 60%, 100% { transform: translateX(110%); } }
+    @keyframes shimmer { to { background-position: 200% center; } }
+    @keyframes beat { 0%, 40%, 80%, 100% { transform: scale(1); } 20% { transform: scale(1.3); } 60% { transform: scale(1.15); } }
+
+    /* ---- Responsif ---- */
+    @media (max-width: 520px) {
+      main { margin: 10px auto 18px; border-radius: 20px; }
+      .baris { padding: 14px 16px; }
+      .foto { width: 44px; height: 44px; }
+      .juara .foto { width: 56px; height: 56px; font-size: 1.35rem; }
+      .peringkat { width: 26px; height: 26px; font-size: 13px; }
+      .nama { font-size: 1.05rem; }
+      .juara .nama { font-size: clamp(1.3rem, 5vw, 1.6rem); }
+      .skor { font-size: 12.5px; padding: 5px 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <main>
+    <header>
+      <span class="badge"><span class="dot"></span>Hasil Voting Live</span>
+      <h1>Siapa <span class="hl">juaranya</span>?</h1>
+      <p class="status"><span class="dot"></span><span id="status">Memuat hasil...</span></p>
+    </header>
+
+    <div id="daftar"></div>
+  </main>
+
+  <footer>
+    <? if (footerImg) { ?><img src="<?!= footerImg ?>" alt=""><? } ?>
+    <span>made with tri.png<span class="heart" aria-hidden="true">♥</span> </span>
+  </footer>
+
+  <script>
+    const elDaftar = document.getElementById('daftar');
+    const elStatus = document.getElementById('status');
+    const JEDA_MS = 5000; // data diambil ulang setiap 5 detik
+
+    function ambilHasil() {
+      google.script.run
+        .withSuccessHandler(tampilkan)
+        .withFailureHandler(() => {
+          elStatus.textContent = 'Gagal memuat, mencoba lagi...';
+        })
+        .getHasil();
+    }
+
+    // Ubah link Google Drive (file/d/... atau uc?id=...) menjadi URL gambar yang bisa ditampilkan
+    function urlFotoDrive(u) {
+      let m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+      if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400';
+      m = u.match(/drive\.google\.com\/(?:uc|open)\?(?:[^#]*&)?id=([\w-]+)/);
+      if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400';
+      return u;
+    }
+
+    // Foto tampil hanya jika gambar berhasil dimuat; selain itu inisial
+    function buatFoto(g) {
+      const kotak = document.createElement('div');
+      kotak.className = 'foto';
+      const inisial = g.nama.charAt(0).toUpperCase();
+
+      if (g.foto && String(g.foto).trim()) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.onload = () => kotak.classList.add('ada-foto');
+        img.onerror = () => {
+          kotak.classList.remove('ada-foto');
+          img.remove();
+        };
+        img.src = urlFotoDrive(String(g.foto).trim());
+        kotak.append(inisial, img); // inisial terlihat dulu, lalu ditutup foto saat termuat
+      } else {
+        kotak.textContent = inisial;
+      }
+      return kotak;
+    }
+
+    function tampilkan(data) {
+      elStatus.textContent = data.total === 0
+        ? 'Belum ada suara masuk · diperbarui pukul ' + data.waktu
+        : 'Total ' + data.total + ' suara · diperbarui pukul ' + data.waktu;
+
+      elDaftar.innerHTML = '';
+
+      if (!data.hasil.length) {
+        const p = document.createElement('p');
+        p.className = 'lain';
+        p.textContent = 'Belum ada guru. Isi sheet "Guru" terlebih dahulu.';
+        elDaftar.appendChild(p);
+        return;
+      }
+
+      data.hasil.forEach((g, i) => {
+        const sebagaiJuara = i === 0 && data.total > 0;
+
+        const baris = document.createElement('div');
+        baris.className = sebagaiJuara ? 'baris juara' : 'baris';
+        baris.style.setProperty('--i', i);
+
+        const atas = document.createElement('div');
+        atas.className = 'atas';
+
+        const kiri = document.createElement('div');
+        kiri.className = 'identitas';
+
+        const peringkat = document.createElement('span');
+        peringkat.className = 'peringkat';
+        peringkat.textContent = i + 1;
+
+        const foto = buatFoto(g);
+
+        const nama = document.createElement('span');
+        nama.className = 'nama';
+        nama.textContent = g.nama;
+
+        kiri.append(peringkat, foto, nama);
+
+        const skor = document.createElement('span');
+        skor.className = 'skor';
+        skor.textContent = g.suara + ' suara · ' + g.persen + '%';
+
+        atas.append(kiri, skor);
+
+        const lintasan = document.createElement('div');
+        lintasan.className = 'lintasan';
+        const isi = document.createElement('div');
+        isi.className = 'isi';
+        lintasan.appendChild(isi);
+
+        baris.append(atas, lintasan);
+        elDaftar.appendChild(baris);
+
+        // Bar bergerak dari 0 setiap kali data diperbarui
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          isi.style.width = g.persen + '%';
+        }));
+      });
+    }
+
+    ambilHasil();
+    setInterval(ambilHasil, JEDA_MS);
+  </script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef1f7;
+      --ink: #0f172a;
+      --muted: #5b6b7c;
+      --rule: #e3e8f0;
+      --accent: #4f46e5;
+      --accent-2: #7c3aed;
+      --accent-soft: #eef2ff;
+      --ok: #15803d;
+      --ok-bg: #ecfdf5;
+      --ok-line: #bbf7d0;
+      --err: #b91c1c;
+      --err-bg: #fef2f2;
+      --err-line: #fecaca;
+      --shadow: 0 24px 60px -28px rgba(15, 23, 42, .28), 0 6px 18px -10px rgba(15, 23, 42, .10);
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      padding: clamp(20px, 4vw, 44px) 16px 40px;
+      min-height: 100vh;
+      background:
+        radial-gradient(1100px 520px at 85% -10%, rgba(124, 58, 237, .08), transparent 60%),
+        radial-gradient(900px 480px at 0% 110%, rgba(79, 70, 229, .08), transparent 60%),
+        var(--bg);
+      color: var(--ink);
+      font: 16px/1.55 "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: rgba(79, 70, 229, .18); }
+
+    /* ---- Latar animasi (blob bergerak pelan) ---- */
+    .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+    .bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(15, 23, 42, .05) 1px, transparent 1.4px);
+      background-size: 26px 26px;
+    }
+    .blob { position: absolute; border-radius: 50%; filter: blur(85px); }
+    .blob-1 { width: 430px; height: 430px; top: -140px; left: -120px; background: rgba(99, 102, 241, .38); animation: drift1 22s ease-in-out infinite alternate; }
+    .blob-2 { width: 400px; height: 400px; top: 34%; right: -140px; background: rgba(168, 85, 247, .30); animation: drift2 26s ease-in-out infinite alternate; }
+    .blob-3 { width: 360px; height: 360px; bottom: -150px; left: 22%; background: rgba(236, 72, 153, .22); animation: drift3 30s ease-in-out infinite alternate; }
+
+    /* ---- Kartu utama ---- */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      margin: 44px auto 28px;
+      padding: clamp(26px, 5vw, 42px);
+      background: rgba(255, 255, 255, .84);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, .7);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+    main > * { animation: rise .55s cubic-bezier(.22, .68, .32, 1) backwards; }
+    main > *:nth-child(2) { animation-delay: .08s; }
+    main > *:nth-child(3) { animation-delay: .16s; }
+    main > *:nth-child(4) { animation-delay: .24s; }
+    main > *:nth-child(5) { animation-delay: .32s; }
+    main > *:nth-child(6) { animation-delay: .4s; }
+    #grupNama, #grupPassword, #langkahGuru { animation-delay: 0s; animation-duration: .45s; }
+
+    /* ---- Header ---- */
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 14px; border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(79, 70, 229, .18);
+      color: var(--accent);
+      font-size: 11.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
+    }
+    .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: dotPulse 2.2s ease-out infinite; }
+    h1 {
+      font-size: clamp(1.9rem, 6vw, 2.7rem);
+      line-height: 1.12; letter-spacing: -.02em; font-weight: 800;
+      margin: 16px 0 10px;
+    }
+    .hl {
+      position: relative;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+      background-size: 200% auto;
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent;
+      animation: shimmer 6s linear infinite;
+    }
+    .hl::after {
+      content: '';
+      position: absolute; left: 1px; right: 1px; bottom: -3px; height: 5px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
+      background-size: 200% auto; opacity: .3;
+      animation: shimmer 6s linear infinite;
+    }
+    .intro { color: var(--muted); font-size: 15px; margin: 0; max-width: 46ch; }
+
+    /* ---- Indikator langkah (4 Langkah) ---- */
+    .steps { display: flex; align-items: center; gap: 8px; margin: 26px 0; }
+    .step { display: flex; align-items: center; gap: 6px; flex: none; }
+    .num {
+      position: relative; flex: none;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1.5px solid var(--rule); background: #fff; color: var(--muted);
+      font-size: 12.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .35s, border-color .35s, color .35s;
+    }
+    .num .c { display: none; }
+    .step .lbl { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; transition: color .3s; }
+    .bar { flex: 1; height: 2px; border-radius: 2px; background: var(--rule); transition: background .4s; }
+
+    /* Garis penghubung aktif */
+    .steps[data-step="2"] .bar.bar-1,
+    .steps[data-step="3"] .bar.bar-1,
+    .steps[data-step="3"] .bar.bar-2,
+    .steps[data-step="4"] .bar.bar-1,
+    .steps[data-step="4"] .bar.bar-2,
+    .steps[data-step="4"] .bar.bar-3 { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+
+    /* Langkah aktif */
+    .steps[data-step="1"] .step[data-s="1"] .num,
+    .steps[data-step="2"] .step[data-s="2"] .num,
+    .steps[data-step="3"] .step[data-s="3"] .num,
+    .steps[data-step="4"] .step[data-s="4"] .num {
+      border-color: transparent; color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      animation: stepHalo 2.4s ease-out infinite;
+    }
+    .steps[data-step="1"] .step[data-s="1"] .lbl,
+    .steps[data-step="2"] .step[data-s="2"] .lbl,
+    .steps[data-step="3"] .step[data-s="3"] .lbl,
+    .steps[data-step="4"] .step[data-s="4"] .lbl { color: var(--ink); }
+
+    /* Langkah selesai */
+    .steps[data-step="2"] .step[data-s="1"] .num,
+    .steps[data-step="3"] .step[data-s="1"] .num,
+    .steps[data-step="3"] .step[data-s="2"] .num,
+    .steps[data-step="4"] .step[data-s="1"] .num,
+    .steps[data-step="4"] .step[data-s="2"] .num,
+    .steps[data-step="4"] .step[data-s="3"] .num {
+      background: var(--accent-soft); border-color: rgba(79, 70, 229, .35); color: var(--accent);
+    }
+    .steps[data-step="2"] .step[data-s="1"] .num .n,
+    .steps[data-step="3"] .step[data-s="1"] .num .n,
+    .steps[data-step="3"] .step[data-s="2"] .num .n,
+    .steps[data-step="4"] .step[data-s="1"] .num .n,
+    .steps[data-step="4"] .step[data-s="2"] .num .n,
+    .steps[data-step="4"] .step[data-s="3"] .num .n { display: none; }
+    .steps[data-step="2"] .step[data-s="1"] .num .c,
+    .steps[data-step="3"] .step[data-s="1"] .num .c,
+    .steps[data-step="3"] .step[data-s="2"] .num .c,
+    .steps[data-step="4"] .step[data-s="1"] .num .c,
+    .steps[data-step="4"] .step[data-s="2"] .num .c,
+    .steps[data-step="4"] .step[data-s="3"] .num .c { display: block; }
+    .steps[data-step="2"] .step[data-s="1"] .lbl,
+    .steps[data-step="3"] .step[data-s="1"] .lbl,
+    .steps[data-step="3"] .step[data-s="2"] .lbl,
+    .steps[data-step="4"] .step[data-s="1"] .lbl,
+    .steps[data-step="4"] .step[data-s="2"] .lbl,
+    .steps[data-step="4"] .step[data-s="3"] .lbl { color: var(--ink); }
+
+    /* ---- Form ---- */
+    .field + .field { margin-top: 16px; }
+    label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: .02em; }
+    select,
+    input[type="password"],
+    input[type="text"] {
+      appearance: none; -webkit-appearance: none;
+      display: block; width: 100%; margin: 0;
+      padding: 13px 16px;
+      border: 1.5px solid var(--rule); border-radius: 12px;
+      background-color: #fff;
+      font: inherit; font-size: 16px; color: var(--ink);
+      transition: border-color .25s, box-shadow .25s;
+    }
+    select {
+      padding-right: 44px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235b6b7c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-position: right 16px center;
+      background-size: 16px;
+      background-repeat: no-repeat;
+    }
+    select:hover,
+    input[type="password"]:hover,
+    input[type="text"]:hover { border-color: #c7d0dd; }
+    select:focus-visible,
+    input[type="password"]:focus-visible,
+    input[type="text"]:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+    /* Pembungkus input password + tombol intip */
+    .pw-wrap { position: relative; display: flex; align-items: center; }
+    .pw-wrap input { padding-right: 48px; }
+    .btn-eye {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 36px; height: 36px; margin: 0; padding: 0;
+      background: transparent; color: var(--muted);
+      box-shadow: none; border-radius: 9px;
+    }
+    .btn-eye::after { display: none; }
+    .btn-eye:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); transform: translateY(-50%); box-shadow: none; }
+    .btn-eye:active:not(:disabled) { transform: translateY(-50%) scale(.95); }
+    .hint { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+
+    select:focus-visible,
+    input:focus-visible,
+    .guru input:focus-visible,
+    button:focus-visible,
+    a:focus-visible { outline-offset: 2px; }
+    .guru input:focus-visible,
+    button:focus-visible,
+    a:focus-visible { outline: 3px solid rgba(79, 70, 229, .45); }
+
+    /* ---- Daftar guru ---- */
+    h2 { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; margin: 26px 0 0; }
+    h2::before { content: ''; width: 20px; height: 4px; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); flex: none; }
+    #daftarGuru { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    #daftarGuru > p { color: var(--muted); margin: 4px 2px; font-size: 14.5px; }
+    .guru {
+      display: grid;
+      grid-template-columns: 22px 48px 1fr;
+      gap: 14px; align-items: center;
+      padding: 13px 14px;
+      border: 1.5px solid var(--rule); border-radius: 14px;
+      background: #fff;
+      cursor: pointer; color: var(--ink);
+      transition: transform .2s, border-color .2s, box-shadow .25s, background .25s;
+      animation: rise .5s cubic-bezier(.22, .68, .32, 1) backwards;
+      animation-delay: calc(var(--i, 0) * 50ms);
+    }
+    .guru:hover { border-color: #c7d0dd; transform: translateY(-2px); box-shadow: 0 10px 24px -16px rgba(15, 23, 42, .35); }
+    .guru input {
+      appearance: none; -webkit-appearance: none;
+      margin: 0; width: 22px; height: 22px; justify-self: center;
+      border: 2px solid #cbd5e1; border-radius: 50%;
+      cursor: pointer; flex: none;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+    .guru:hover input { border-color: var(--accent); }
+    .guru input:checked {
+      border-color: var(--accent); transform: scale(1.05);
+      background-image: radial-gradient(circle, #fff 0 5px, transparent 5.5px), linear-gradient(135deg, var(--accent), var(--accent-2));
+      background-position: center, center;
+      background-size: 12px 12px, 100% 100%;
+      background-repeat: no-repeat;
+    }
+    .guru:has(input:checked) {
+      border-color: rgba(79, 70, 229, .45);
+      background: linear-gradient(90deg, rgba(79, 70, 229, .08), rgba(124, 58, 237, .04));
+      box-shadow: 0 12px 28px -18px rgba(79, 70, 229, .55);
+    }
+    .nama { font-size: 15.5px; font-weight: 600; }
+    .foto {
+      width: 48px; height: 48px; border-radius: 12px;
+      overflow: hidden;
+      background: var(--accent-soft);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: var(--accent);
+      transition: background .3s, color .3s;
+      flex: none;
+    }
+    .guru:has(input:checked) .foto { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+    .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* ---- Tombol Utama ---- */
+    button#btnKirim {
+      position: relative; overflow: hidden;
+      margin-top: 22px; width: 100%; padding: 15px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; border: 0; border-radius: 14px;
+      font: inherit; font-weight: 700; font-size: 15.5px; letter-spacing: .01em;
+      cursor: pointer;
+      box-shadow: 0 14px 30px -12px rgba(79, 70, 229, .55);
+      transition: transform .2s, box-shadow .25s, opacity .25s;
+    }
+    button#btnKirim::after {
+      content: '';
+      position: absolute; top: 0; bottom: 0; left: 0; width: 45%;
+      background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .35), transparent);
+      transform: translateX(-160%) skewX(-18deg);
+      animation: sheen 4s ease-in-out 1.4s infinite;
+      pointer-events: none;
+    }
+    button#btnKirim:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 18px 36px -12px rgba(79, 70, 229, .6); }
+    button#btnKirim:active:not(:disabled) { transform: translateY(0) scale(.985); }
+    button#btnKirim:disabled { opacity: .55; cursor: default; }
+    button#btnKirim:disabled.loading { opacity: .9; }
+    button#btnKirim.loading::before {
+      content: '';
+      width: 16px; height: 16px; flex: none;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255, 255, 255, .35); border-top-color: #fff;
+      animation: spin .8s linear infinite;
+    }
+
+    /* ---- Pesan status ---- */
+    #pesan { min-height: 1.5em; margin: 18px 0 0; font-size: 14.5px; }
+    #pesan.ok:not(:empty), #pesan.err:not(:empty) {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-radius: 12px; font-weight: 600;
+      animation: pop .4s cubic-bezier(.2, .8, .3, 1.2);
+    }
+    #pesan.ok:not(:empty) { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--ok); }
+    #pesan.err:not(:empty) { background: var(--err-bg); border: 1px solid var(--err-line); color: var(--err); }
+    #pesan.ok:not(:empty)::before, #pesan.err:not(:empty)::before {
+      content: '';
+      width: 20px; height: 20px; flex: none; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff;
+    }
+    #pesan.ok:not(:empty)::before { content: '✓'; background: #16a34a; }
+    #pesan.err:not(:empty)::before { content: '!'; background: #ef4444; }
+
+    /* ---- Footer ---- */
+    footer {
+      max-width: 560px; margin: 26px auto 0;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      color: var(--muted); font-size: .9rem;
+      animation: fade .7s .35s backwards;
+    }
+    footer img { height: 26px; width: auto; border-radius: 6px; }
+    .heart { display: inline-block; color: var(--accent-2); margin-left: 2px; animation: beat 1.8s ease-in-out infinite; }
+    a { color: var(--ink); text-underline-offset: 3px; }
+
+    /* ---- Keyframes ---- */
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes drift1 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(60px, 44px, 0) scale(1.15); } }
+    @keyframes drift2 { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(-56px, 28px, 0) scale(.94); } }
+    @keyframes drift3 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(44px, -50px, 0) scale(1.16); } }
+    @keyframes dotPulse { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, .45); } 75%, 100% { box-shadow: 0 0 0 7px rgba(79, 70, 229, 0); } }
+    @keyframes stepHalo { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, .35); } 70%, 100% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); } }
+    @keyframes sheen { 0% { transform: translateX(-160%) skewX(-18deg); } 55%, 100% { transform: translateX(340%) skewX(-18deg); } }
+    @keyframes spin { to { transform: rotate(1turn); } }
+    @keyframes pop { 0% { opacity: 0; transform: translateY(6px) scale(.96); } 100% { opacity: 1; transform: none; } }
+    @keyframes shimmer { to { background-position: 200% center; } }
+    @keyframes beat { 0%, 40%, 80%, 100% { transform: scale(1); } 20% { transform: scale(1.3); } 60% { transform: scale(1.15); } }
+
+    /* ---- Responsif ---- */
+    @media (max-width: 520px) {
+      main { margin: 10px auto 18px; border-radius: 20px; padding: 22px 18px; }
+      .steps { gap: 4px; margin: 20px 0; }
+      .step { gap: 4px; }
+      .num { width: 24px; height: 24px; font-size: 11px; }
+      .step .lbl { font-size: 11px; }
+      .guru { grid-template-columns: 20px 44px 1fr; gap: 11px; padding: 12px; }
+      .foto { width: 44px; height: 44px; }
+      .nama { font-size: 15px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <main>
+    <header>
+      <span class="badge"><span class="dot"></span>Pemilihan Guru Terbaik</span>
+      <h1>Siapa guru <span class="hl">terbaik</span> kita?</h1>
+      <p class="intro">Pilih kelas, namamu, masukkan password, lalu pilih satu guru. Setiap siswa hanya bisa memilih sekali.</p>
+    </header>
+
+    <div class="steps" id="steps" data-step="1" aria-hidden="true">
+      <div class="step" data-s="1"><span class="num"><span class="n">1</span><span class="c">✓</span></span><span class="lbl">Kelas</span></div>
+      <div class="bar bar-1"></div>
+      <div class="step" data-s="2"><span class="num"><span class="n">2</span><span class="c">✓</span></span><span class="lbl">Nama</span></div>
+      <div class="bar bar-2"></div>
+      <div class="step" data-s="3"><span class="num"><span class="n">3</span><span class="c">✓</span></span><span class="lbl">Sandi</span></div>
+      <div class="bar bar-3"></div>
+      <div class="step" data-s="4"><span class="num"><span class="n">4</span><span class="c">✓</span></span><span class="lbl">Guru</span></div>
+    </div>
+
+    <div class="field">
+      <label for="kelas">Kelas</label>
+      <select id="kelas"><option value="">Memuat kelas...</option></select>
+    </div>
+
+    <div class="field" id="grupNama" hidden>
+      <label for="nama">Nama</label>
+      <select id="nama"></select>
+    </div>
+
+    <div class="field" id="grupPassword" hidden>
+      <label for="password">Password Siswa</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" placeholder="Masukkan passwordmu..." autocomplete="off">
+        <button type="button" class="btn-eye" id="togglePw" aria-label="Tampilkan password" title="Tampilkan/sembunyikan password">
+          <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <span class="hint">Ketik password untuk membuka daftar pilihan guru.</span>
+    </div>
+
+    <div id="langkahGuru" hidden>
+      <h2>Pilih satu guru</h2>
+      <div id="daftarGuru"><p>Memuat daftar guru...</p></div>
+      <button id="btnKirim" type="button">Kirim pilihan</button>
+    </div>
+
+    <p id="pesan" role="status"></p>
+  </main>
+
+  <footer>
+    <? if (footerImg) { ?><img src="<?!= footerImg ?>" alt=""><? } ?>
+    <span>made with tri.png<span class="heart" aria-hidden="true">♥</span> </span>
+  </footer>
+
+  <script>
+    const selKelas = document.getElementById('kelas');
+    const grupNama = document.getElementById('grupNama');
+    const selNama = document.getElementById('nama');
+    const grupPassword = document.getElementById('grupPassword');
+    const inpPassword = document.getElementById('password');
+    const togglePw = document.getElementById('togglePw');
+    const langkahGuru = document.getElementById('langkahGuru');
+    const elDaftar = document.getElementById('daftarGuru');
+    const elPesan = document.getElementById('pesan');
+    const btn = document.getElementById('btnKirim');
+    const stepsEl = document.getElementById('steps');
+
+    function setStep(n) {
+      stepsEl.setAttribute('data-step', n);
+    }
+
+    function tampilkanPesan(teks, ok) {
+      elPesan.textContent = teks;
+      elPesan.className = ok ? 'ok' : 'err';
+    }
+
+    function isiPilihan(select, daftar, placeholder) {
+      select.innerHTML = '';
+      const awal = document.createElement('option');
+      awal.value = '';
+      awal.textContent = placeholder;
+      select.appendChild(awal);
+
+      daftar.forEach(p => {
+        const opsi = document.createElement('option');
+        opsi.value = p.value;
+        opsi.textContent = p.label;
+        select.appendChild(opsi);
+      });
+    }
+
+    function buatFoto(g) {
+      const kotak = document.createElement('div');
+      kotak.className = 'foto';
+      const inisial = g.nama.charAt(0).toUpperCase();
+
+      if (g.foto) {
+        const img = document.createElement('img');
+        img.alt = g.nama;
+        img.src = g.foto;
+        img.onerror = () => kotak.replaceChildren(inisial);
+        kotak.appendChild(img);
+      } else {
+        kotak.textContent = inisial;
+      }
+      return kotak;
+    }
+
+    function muatKelas() {
+      google.script.run
+        .withSuccessHandler(daftar => {
+          isiPilihan(selKelas, daftar.map(k => ({ value: k, label: k })), 'Pilih kelas...');
+        })
+        .withFailureHandler(() => tampilkanPesan('Daftar kelas belum bisa dimuat. Muat ulang halaman.', false))
+        .getDaftarKelas();
+    }
+
+    function muatNama(kelas) {
+      google.script.run
+        .withSuccessHandler(daftar => {
+          if (selKelas.value !== kelas) return;
+          const placeholder = daftar.length ? 'Pilih nama...' : 'Belum ada siswa di kelas ini';
+          isiPilihan(selNama, daftar.map(s => ({ value: s.id, label: s.nama })), placeholder);
+          grupNama.hidden = false;
+        })
+        .withFailureHandler(() => tampilkanPesan('Daftar nama belum bisa dimuat. Coba pilih kelas lagi.', false))
+        .getDaftarSiswa(kelas);
+    }
+
+    function resetPasswordDanGuru() {
+      inpPassword.value = '';
+      inpPassword.type = 'password';
+      grupPassword.hidden = true;
+      langkahGuru.hidden = true;
+      document.querySelectorAll('input[name="guru"]').forEach(r => (r.checked = false));
+    }
+
+    function resetNama() {
+      selNama.value = '';
+      grupNama.hidden = true;
+      resetPasswordDanGuru();
+    }
+
+    function muatGuru() {
+      google.script.run
+        .withSuccessHandler(tampilkanGuru)
+        .withFailureHandler(() => {
+          elDaftar.innerHTML = '';
+          const p = document.createElement('p');
+          p.textContent = 'Daftar guru belum bisa dimuat. Muat ulang halaman.';
+          elDaftar.appendChild(p);
+        })
+        .getDaftarGuru();
+    }
+
+    function tampilkanGuru(daftar) {
+      elDaftar.innerHTML = '';
+
+      if (!daftar.length) {
+        const p = document.createElement('p');
+        p.textContent = 'Belum ada guru. Isi sheet "Guru" terlebih dahulu.';
+        elDaftar.appendChild(p);
+        return;
+      }
+
+      daftar.forEach((g, i) => {
+        const label = document.createElement('label');
+        label.className = 'guru';
+        label.style.setProperty('--i', i);
+
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'guru';
+        radio.value = g.id;
+
+        const foto = buatFoto(g);
+
+        const nama = document.createElement('span');
+        nama.className = 'nama';
+        nama.textContent = g.nama;
+
+        label.append(radio, foto, nama);
+        elDaftar.appendChild(label);
+      });
+    }
+
+    function selesai() {
+      btn.disabled = false;
+      btn.textContent = 'Kirim pilihan';
+      btn.classList.remove('loading');
+    }
+
+    function kirim() {
+      if (!selNama.value) {
+        tampilkanPesan('Pilih kelas dan nama terlebih dahulu.', false);
+        return;
+      }
+
+      const password = inpPassword.value.trim();
+      if (!password) {
+        tampilkanPesan('Masukkan password terlebih dahulu.', false);
+        inpPassword.focus();
+        return;
+      }
+
+      const pilihan = document.querySelector('input[name="guru"]:checked');
+      if (!pilihan) {
+        tampilkanPesan('Pilih satu guru.', false);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Mengirim...';
+      btn.classList.add('loading');
+
+      google.script.run
+        .withSuccessHandler(res => {
+          tampilkanPesan(res.pesan, res.ok);
+          if (res.ok) {
+            // Kembali ke awal untuk siswa berikutnya, pesan tetap terlihat
+            selKelas.value = '';
+            resetNama();
+            setStep(1);
+          } else if (res.fokusPassword) {
+            // Jika password salah, fokuskan kembali ke kolom password
+            inpPassword.focus();
+            inpPassword.select();
+          }
+          selesai();
+        })
+        .withFailureHandler(err => {
+          tampilkanPesan('Gagal mengirim: ' + err.message, false);
+          selesai();
+        })
+        .submitVote(selNama.value, pilihan.value, password);
+    }
+
+    selKelas.addEventListener('change', () => {
+      resetNama();
+      elPesan.textContent = '';
+      if (selKelas.value) {
+        muatNama(selKelas.value);
+        setStep(2);
+      } else {
+        setStep(1);
+      }
+    });
+
+    selNama.addEventListener('change', () => {
+      elPesan.textContent = '';
+      resetPasswordDanGuru();
+      if (selNama.value) {
+        grupPassword.hidden = false;
+        setStep(3);
+        setTimeout(() => inpPassword.focus(), 50);
+      } else {
+        setStep(2);
+      }
+    });
+
+    inpPassword.addEventListener('input', () => {
+      elPesan.textContent = '';
+      const adaIsi = inpPassword.value.trim().length > 0;
+      langkahGuru.hidden = !adaIsi;
+      setStep(adaIsi ? 4 : 3);
+    });
+
+    togglePw.addEventListener('click', () => {
+      const isHidden = inpPassword.type === 'password';
+      inpPassword.type = isHidden ? 'text' : 'password';
+      togglePw.setAttribute('aria-label', isHidden ? 'Sembunyikan password' : 'Tampilkan password');
+    });
+
+    btn.addEventListener('click', kirim);
+    muatKelas();
+    muatGuru();
+  </script>
+</body>
+</html>
